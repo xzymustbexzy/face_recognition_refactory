@@ -1,0 +1,170 @@
+{% extends "framework.html" %}
+
+{% block extraCSS %}
+<link rel="stylesheet" type="text/css" href="../static/Customizable-Loading-Modal-Plugin/css/modal-loading-animate.css" />
+<link rel="stylesheet" type="text/css" href="../static/Customizable-Loading-Modal-Plugin/css/modal-loading.css" />
+{% endblock %}
+
+{% block title %}
+  系统参数设置
+{% endblock %}
+
+{% block subtitle %}
+  您可以查看及修改系统运行的一些参数
+{% endblock %}
+
+{% block path %}
+  <i class="active">参数设置</i>
+{% endblock %}
+
+
+{% block main %}
+  <!-- Main content -->
+  <section class="content container-fluid">
+    <div class="row">
+      <div class="col-xs-12">
+        <div class="box">
+          <div class="box-header">
+            <h3 class="box-title">参数列表</h3>
+
+            <div class="box-tools">
+              <div class="input-group input-group-sm" style="width: 150px;">
+                <input type="text" name="table_search" class="form-control pull-right" placeholder="Search">
+
+                <div class="input-group-btn">
+                  <button type="submit" class="btn btn-default"><i class="fa fa-search"></i></button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- /.box-header -->
+          <div class="box-body table-responsive no-padding">
+            <table id="parameters_table" class="table table-bordered table-striped">
+              <thead>
+                <tr>
+                  <th>参数名</th>
+                  <th>参数值</th>
+                  <th>含义</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>注册图片存放路径</td>
+                  <td><input id="login_image_root" class="form-control" type="text" value=""/></td>
+                  <td>用户注册的图片存放路径，默认为"server/images/"</td>
+                </tr>
+                <tr>
+                  <td>对比图片存放路径</td>
+                  <td><input id="check_image_root" class="form-control" type="text" value=""/></td>
+                  <td>用户对比请求时提交的图片存放路径，默认为"server/images/"</td>
+                </tr>
+                <tr>
+                  <td>相似度阈值</td>
+                  <td><input id="sim_threshold" class="form-control" type="text" value=""/></td>
+                  <td>若对比的相似度大于相似度阈值，则验证通过，否则验证失败，默认为0.4</td>
+                </tr>
+                <tr>
+                  <td>图片存储策略</td>
+                  <td><input id="save_img_option" class="form-control" type="text" value=""/></td>
+                  <td>系统对人脸验证请求上传照片的处理方式，选项有:1、即时存储；2、加入存储队列，空闲时存储；3、不存储，默认为1</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <!-- /.box-body -->
+          <div class="box-footer clearfix">
+            <button id="submitBtn" type="button" class="pull-right btn btn-warning" style="margin:1px 8px 1px 8px">
+              提交修改
+            </button>
+            <button id="restartBtn" type="button" class="pull-right btn btn-danger" style="margin:1px 8px 1px 8px" onclick="horizontalNoTitle();">
+              重启系统
+            </button>
+          </div>
+        </div>
+        <!-- /.box -->
+      </div>
+    </div>
+
+  </section>
+  <!-- /.content -->
+{% endblock %}
+
+{% block extraJS %}
+<script type="text/javascript" src="../static/Customizable-Loading-Modal-Plugin/js/modal-loading.js"></script>
+<script>
+  var horizontalNoTitle;
+  $(function() {
+
+    $("#siderbar").children("li").eq(1).addClass("active");
+
+    getParam();
+
+    function getParam() {
+      $.get(
+        '/admin/parameters/data',
+        function(response) {
+          param = JSON.parse(response);
+          $("#sim_threshold").val(param['sim_threshold']);
+          $("#login_image_root").val(param['login_image_root']);
+          $("#check_image_root").val(param['check_image_root']);
+          $("#save_img_option").val(param['save_img_option']);
+        }
+      )
+    }
+
+    $("#submitBtn").on("click", function() {
+      data = {
+          'sim_threshold':$("#sim_threshold").val(),
+          'login_image_root':$("#login_image_root").val(),
+          'check_image_root':$("#check_image_root").val(),
+          'save_img_option':$("#save_img_option").val()
+      };
+
+      $.post(
+        "/admin/parameters",
+        {data:JSON.stringify(data)},//data
+        function(response) {
+          if (response == "success") {
+            alert("修改成功，重启系统后配置才会生效！");
+          }
+          else {
+            alert("修改失败！！！");
+          }
+        }
+      )
+    });
+
+    $("#restartBtn").on("click", function() {
+      $.get({
+        url : "/admin/restart",
+        function(response) {
+          if (response == "success") {
+            alert("hello");
+          }
+          else {
+            alert("程序重启失败");
+          }
+        }
+      });
+    });
+
+    function loadingOut(loading) {
+      setTimeout(() => loading.out(), 3000);
+    }
+
+    horizontalNoTitle = function () {
+
+      var loading = new Loading({
+        direction: 'hor',
+        discription: '正在重启系统...',
+          defaultApply: 	true,
+      });
+      loadingOut(loading);
+      
+    }
+
+    
+
+  });
+</script>
+{% endblock %}

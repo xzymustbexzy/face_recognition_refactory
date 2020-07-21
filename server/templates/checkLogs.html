@@ -1,0 +1,220 @@
+{% extends "framework.html" %}
+
+{% block title %}
+  验证记录表
+{% endblock %}
+
+{% block subtitle %}
+  您可以查看用户的验证记录以及照片的对比
+{% endblock %}
+
+{% block path %}
+  <i class="active">验证记录</i>
+{% endblock %}
+
+
+{% block main %}
+  <!-- Main content -->
+  <section class="content">
+    <div class="row">
+      <div class="col-xs-12">
+        <div class="box">
+          <div class="box-header">
+            <h3 class="box-title">注册用户表</h3>
+          </div>
+          <!-- /.box-header -->
+          <div class="box-body">
+            <table id="log_table" class="table table-bordered table-striped">
+              <thead>
+              <tr>
+                <th>流水号</th>
+                <th>用户账号</th>
+                <th>账号类型</th>
+                <th>姓名</th>
+                <th>上传渠道</th>
+                <th>对比时间</th>
+                <th>相似度</th>
+                <th>结果</th>
+                <th>对比照片存放路径</th>
+                <th>照片对比</th>
+              </tr>
+              </thead>
+            </table>
+          </div>
+          <!-- /.box-body -->
+        </div>
+        <!-- /.box -->
+      </div>
+      <!-- /.col -->
+    </div>
+    <!-- /.row -->
+    <!-- Content Header (Page header) -->
+    <section class="content-header">
+        <ol class="breadcrumb">
+          <div class="btn-group">
+            <button id="btnExportExcel" type="button" class="btn btn-default">导出excel</button>
+            <button id="btnExportPdf" type="button" class="btn btn-default" >导出pdf</button>
+          </div>
+        </ol>
+    </section>
+  </section>
+  <!-- /.content -->
+
+
+{% endblock %}
+
+{% block extraJS %}
+  <!-- DataTables -->
+  <script src="../server/static/web/bower_components/datatables.net/js/jquery.dataTables.min.js"></script>
+  <script src="../server/static/web/bower_components/datatables.net-bs/js/dataTables.bootstrap.min.js"></script>
+  <!-- SlimScroll -->
+  <script src="../server/static/web/bower_components/jquery-slimscroll/jquery.slimscroll.min.js"></script>
+  <!-- FastClick -->
+  <script src="../server/static/web/bower_components/fastclick/lib/fastclick.js"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.22/pdfmake.min.js"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.min.js"></script>
+  <script src="../server/static/js/table2excel.js"></script>
+  <script>
+    $("#siderbar").children("li").eq(3).addClass("active");
+
+    $(function () {
+      $('#log_table').DataTable({
+        "ajax":"log/data", 
+        'paging'      : true,
+        'lengthChange': false,
+        'searching'   : true,
+        'ordering'    : true,
+        'info'        : true,
+        'autoWidth'   : true,
+        "pageLength"  : 9,
+        "deferRender": true,
+        // 国际化
+      "language": {
+          "sProcessing": "处理中...",
+          "sLengthMenu": "显示 _MENU_ 项结果",
+          "sZeroRecords": "没有匹配结果",
+          "sInfo": "显示第 _START_ 至 _END_ 项结果，共 _TOTAL_ 项",
+          "sInfoEmpty": "显示第 0 至 0 项结果，共 0 项",
+          "sInfoFiltered": "(由 _MAX_ 项结果过滤)",
+          "sInfoPostFix": "",
+          "sSearch": "搜索:",
+          "sUrl": "",
+          "sEmptyTable": "表中数据为空",
+          "sLoadingRecords": "载入中...",
+          "sInfoThousands": ",",
+          "oPaginate": {
+              "sFirst": "首页",
+              "sPrevious": "上页",
+              "sNext": "下页",
+              "sLast": "末页"
+          },
+          // 排序方式
+          "oAria": {
+              "sSortAscending": ": 以升序排列此列",
+              "sSortDescending": ": 以降序排列此列"
+          },
+          "stripeClasses": [ 'odd', 'even' ]
+        },
+        "initComplete":changeResultColor
+      })
+      $("#log_table_filter").children().addClass("pull-right");
+      $(".box-header").attr("style", "float:left").addClass("col-xs-6");
+
+      $("body").on('DOMSubtreeModified', "#log_table", function() {
+        changeResultColor();
+        initImage();
+    });
+
+        function changeResultColor() {
+            $("#log_table tbody").children("tr").each(function() {
+                var result = $(this).children("td").eq(7);
+                if (!result.hasClass("badge")) {
+                    if (result.html() == "0") {
+                        result.html("失败");
+                        result.addClass("badge bg-red");
+                    }
+                    else if (result.html() == "1") {
+                        result.html("通过");
+                        result.addClass("badge bg-green");
+                    }
+                    
+                }
+            })
+        }
+
+        function initImage() {
+            $("#log_table tbody tr").each(function() {
+                if (!$(this).children("td").eq(9).hasClass("has_img")) {
+                    $(this).children("td").eq(9).addClass("has_img");
+                    var upvote = '';
+                    if ($(this).index() > 6) {
+                        upvote = ' upvote ';
+                    }
+                    var that = this;
+                    $.get(
+                        "/admin/image/path/" + $(this).children("td").eq(1).html(),
+                        function(response) {
+                            initCheckBox(that, response, upvote);
+                        }
+                    )
+                }
+            });
+        }
+                    
+
+        function initCheckBox(that, login_image_path, upvote) {
+            $(that).children("td").eq(9).html(`
+                <div class="popover__wrapper">
+                <a href="#">
+                    <h2 class="popover__title">照片对比</h2>
+                </a>
+                <div class="popover__content` + upvote + `" style="width: 970px; height: 450px; left: -990px;">` +
+                    `<div style="float:left;">`+
+                        `<p class="popover__message">` + 
+                            `<h4 style="text-align:center;">原图:` +
+                            $(that).children("td").eq(1).html() + "————" + $(that).children("td").eq(3).html()
+                        + `</h4></p>` +
+                        `<img height="360px" width="450px" alt="人脸照片加载失败" src="` +
+                        `../` + login_image_path + 
+                    `"></div>` + 
+                    `<div style="margin-left: 482px;">`+
+                        `<p class="popover__message">` + 
+                                `<h4 style="text-align:center;">对比图:` +
+                            $(that).children("td").eq(1).html() + "————" + $(that).children("td").eq(3).html()
+                        + `</h4></p>
+                        <img height="360px" width="450px" alt="人脸照片加载失败" src="` +
+                        `../` + $(that).children("td").eq(8).html()
+                        + `">` +
+                    `</div>` +   
+                    `<div style="color: red; font-size:18px; text-align:center; position: relative; bottom: 1px; padding-top:8px;">相似度` + $(that).children("td").eq(6).html() + `</div>` +    
+                `</div>
+                </div>`
+            )
+        }
+
+        // 导出报表
+        $("#btnExportExcel").on("click", function () {
+            $("#log_table").table2excel({
+                filename: "验证记录表.xls"
+            });
+        });
+
+        $("body").on("click", "#btnExportPdf", function () {
+            html2canvas($('#log_table')[0], {
+                onrendered: function (canvas) {
+                    var data = canvas.toDataURL();
+                    var docDefinition = {
+                        content: [{
+                            image: data,
+                            width: 500
+                        }]
+                    };
+                    pdfMake.createPdf(docDefinition).download("验证记录表.pdf");
+                }
+            });
+        });
+      
+    })
+  </script>
+
+{% endblock %}

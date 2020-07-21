@@ -1,0 +1,6 @@
+{
+    "sim_threshold": 0.55,
+    "login_image_root": "server/images/login/",
+    "check_image_root": "server/images/check/",
+    "save_img_option": "1"
+}

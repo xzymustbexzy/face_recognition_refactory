@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>人脸识别系统</title>
+<!--Bootstrap 3.3.7-->
+<link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+<!--自定义css-->
+<style>
+  html,body{
+    height:100%;
+    padding: 0px;
+    margin: 0px;
+  }
+  .container {
+    padding-right: 15px;
+    padding-left: 15px;
+    margin-right: auto;
+    margin-left: auto;
+}
+  .frame {
+    padding-right: 15px;
+    padding-left: 15px;
+    margin-right: auto;
+    margin-left: auto;
+    height: 100%;
+    background-color: rgb(87, 128, 87, 0.5);
+  }
+  @media (min-width: 768px) {
+  .frame {
+    width: 600px;
+    }
+  }
+  @media (min-width: 992px) {
+    .frame {
+      width: 800px;
+    }
+  }
+  @media (min-width: 1200px) {
+    .frame {
+      width: 1000px;
+    }
+  }
+
+  .capature_image_frame{
+    width: 65%;
+    background-color: grey;
+    height: 100%;
+    margin: 0px 3px;
+    float: left;
+  }
+  .recognition_result_frame{
+    width: 32%;
+    height: 100%;
+    float: right;
+    background-color: rgb(228, 146, 187, 0.3);
+  }
+  .current_result_info_frame{
+    height: 60%;
+    padding: 10px 15px;
+    background-color: rgb(189, 182, 194);
+    font-family:"Times New Roman",Georgia,Serif;
+    font-size: 24px;
+  }
+  .camera_switch_panel{
+    height: 5%;
+    background-color: rgb(130, 63, 0, 0.5);
+  }
+  .image_place{
+    height: 80%;
+    background-color: rgb(93, 26, 141, 0.2);
+  }
+  .image_display{
+    padding: 10px 10px;
+    width: 100%;
+    height: 100%;
+  }
+  .control_panel{
+    height: 15%;
+    background-color: rgb(0, 52, 130);
+  }
+  .mode_switch_panel{
+    height: 60%;
+    background-color: rgb(131, 125, 127);
+  }
+  .control_button_panel{
+    height: 40%;
+    background-color: rgb(238, 238, 236);
+  }
+</style>
+</head>
+<body style="position: relative; top: 0px; min-height: 100%;">
+  <div class="frame">
+    <div class="capature_image_frame">
+      <div class="camera_switch_panel">
+      </div>
+      <div class="image_place">
+        <div class="image_display">
+          <img id="blah" src="#" alt="your image" />
+        </div>
+      </div>
+      <div class="control_panel">
+        <div class="mode_switch_panel">
+        </div>
+        <div class="control_button_panel">
+          <input type='file' style="float: left;" onchange="readURL(this);" />
+          <button id="check_btn">开始验证</button>
+        </div>
+      </div>
+    </div>
+    <div class="recognition_result_frame">
+      <div class="current_result_info_frame" id="current_result">
+        <div>
+          <span>当前识别信息</span>
+        </div>
+        <div>
+          <span>ID:<span><span style="float: right;" id="uid"></span>
+        </div>
+        <div>
+          <span>ID类型:<span><span style="float: right;" id="uid_type"></span>
+        </div>
+        <div>
+          <span>姓名:<span><span style="float: right;" id="name"></span>
+        </div>
+        <div>
+          <span>相似度:<span><span style="float: right;" id="sim"></span>
+        </div>
+        <div>
+          <span>验证结果:<span><span style="float: right;" id="sim_result"></span>
+        </div>
+        <div>
+          <span>对比模式:<span><span style="float: right;" id="mode"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script src="https://apps.bdimg.com/libs/jquery/2.1.4/jquery.min.js"></script>
+<script>
+
+  function getFormatDate() {
+    let now = new Date();
+    let year = now.getFullYear();
+    let month = now.getMonth()+1;
+    let date = now.getDate();
+    let day = now.getDay();//得到周几
+    let hour = now.getHours();//得到小时
+    let minu = now.getMinutes();//得到分钟
+    let sec = now.getSeconds()
+    let _time = year+"-"+month+"-"+date+" "+hour+":"+minu+":"+sec
+    console.log(_time)
+    return _time
+  }    
+
+  class Agent {
+    constructor() {
+      this.img_encoded = null;
+    }
+    _post(url, data) {
+      $.post(
+        '/faceService/checkPerson', 
+        data,
+        function(response) {
+          response = JSON.parse(response);
+          console.log(response);
+          $('#uid').html(response['uid']);
+          $('#uid_type').html(response['uid_type']);
+          $('#name').html(response['name']);
+          $('#sim').html(response['sim']);
+          let result = "通过";
+          if (response['simResult'] == "0") {
+              result = "未通过";
+          }
+          $('#sim_result').html(result);
+          $('#mode').html(response['mode']);
+        });
+    }
+    prepare_data(uid, name, mode) {
+      if (!this.img_encoded) {
+        alert('请上传图片！');
+        return;
+      }
+      let data = {}
+      data['uid'] = uid;
+      data['name'] = name;
+      data['img'] = this.img_encoded;
+      data['login_time'] = getFormatDate();
+      data['channel'] = 'web';
+      data['uid_type'] = '工号';
+      data['mode'] = mode
+      return data
+    }
+    check_person(uid, name, mode) {
+      let data = this.prepare_data(uid, name, mode);
+      this._post('/faceService/checkPerson', data);
+    }
+    set_encoded_image(img_encoded) {
+      this.img_encoded = img_encoded.split('base64,')[1];
+    }
+  }
+</script>
+<script>
+  // 用于发送请求的代理对象
+  var agent = new Agent();
+  function readURL(input) {
+    if (input.files && input.files[0]) {
+      var reader = new FileReader();
+      reader.onload = function (e) {
+        $('#blah')
+          .attr('src', e.target.result)
+          .width("100%")
+          .height("100%");
+        agent.set_encoded_image(e.target.result);
+      };
+      reader.readAsDataURL(input.files[0]);
+    }
+  }
+  $('#check_btn').on('click', function() {
+    agent.check_person('null', 'null', '1vN');
+  });
+</script>
+</html>

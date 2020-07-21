@@ -1,0 +1,232 @@
+{% extends "framework.html" %}
+
+{% block title %}
+  注册用户表
+{% endblock %}
+
+{% block extraCSS %}
+<style>
+
+</style>
+{% endblock %}
+
+{% block subtitle %}
+  您可以查看系统的注册用户和他们的人脸照片
+{% endblock %}
+
+{% block path %}
+  <i class="active">注册用户</i>
+{% endblock %}
+
+
+{% block main %}
+<!-- Main content -->
+<section class="content">
+
+    <div class="row">
+      <div class="col-xs-12">
+        <div class="box">
+          <div class="box-header">
+            <h3 class="box-title">用户注册表</h3>
+          </div>
+          <!-- /.box-header -->
+          <div class="box-body">
+            <table id="face_table" class="table table-bordered table-hover">
+              <thead>
+              <tr>
+                <th>用户账号</th>
+                <th>账号类型</th>
+                <th>姓名</th>
+                <th>注册渠道</th>
+                <th>注册时间</th>
+                <th>照片存放路径</th>
+                <th>人脸照片</th>
+              </tr>
+              </thead>
+            </table>
+          </div>
+          <!-- /.box-body -->
+        </div>
+        <!-- /.box -->
+      </div>
+      <!-- /.col -->
+    </div>
+    <!-- /.row -->
+    <!-- Content Header (Page header) -->
+    <section class="content-header">
+        <ol class="breadcrumb">
+          <div class="btn-group">
+            <button id="btnExportExcel" type="button" class="btn btn-default">导出excel</button>
+            <button id="btnExportPdf" type="button" class="btn btn-default" >导出pdf</button>
+          </div>
+        </ol>
+    </section>
+  </section>
+  <!-- /.content -->
+{% endblock %}
+
+{% block extraJS %}
+<!-- DataTables -->
+  <script src="../server/static/web/bower_components/datatables.net/js/jquery.dataTables.min.js"></script>
+  <script src="../server/static/web/bower_components/datatables.net-bs/js/dataTables.bootstrap.min.js"></script>
+  <!-- SlimScroll -->
+  <script src="../server/static/web/bower_components/jquery-slimscroll/jquery.slimscroll.min.js"></script>
+  <!-- FastClick -->
+  <script src="../server/static/web/bower_components/fastclick/lib/fastclick.js"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.22/pdfmake.min.js"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.min.js"></script>
+  <script src="../server/static/js/table2excel.js"></script>
+
+<script>
+
+  $("#siderbar").children("li").eq(2).addClass("active");
+
+  $('#face_table').DataTable({
+    "ajax": "faces/data",
+    'paging'      : true,
+    'lengthChange': false,
+    'searching'   : true,
+    'ordering'    : true,
+    'info'        : true,
+    'autoWidth'   : true,
+    "pageLength"  : 9,
+    "deferRender": true,
+    // 国际化
+    "language": {
+          "sProcessing": "处理中...",
+          "sLengthMenu": "显示 _MENU_ 项结果",
+          "sZeroRecords": "没有匹配结果",
+          "sInfo": "显示第 _START_ 至 _END_ 项结果，共 _TOTAL_ 项",
+          "sInfoEmpty": "显示第 0 至 0 项结果，共 0 项",
+          "sInfoFiltered": "(由 _MAX_ 项结果过滤)",
+          "sInfoPostFix": "",
+          "sSearch": "搜索:",
+          "sUrl": "",
+          "sEmptyTable": "表中数据为空",
+          "sLoadingRecords": "载入中...",
+          "sInfoThousands": ",",
+          "oPaginate": {
+              "sFirst": "首页",
+              "sPrevious": "上页",
+              "sNext": "下页",
+              "sLast": "末页"
+          },
+          // 排序方式
+          "oAria": {
+              "sSortAscending": ": 以升序排列此列",
+              "sSortDescending": ": 以降序排列此列"
+          },
+          "stripeClasses": [ 'odd', 'even' ]
+        },
+      "initComplete":function() {
+        bindImageHoverEvent();
+        initImage();
+        $('[data-toggle="popover"]').popover();
+      }
+  })
+  $("#face_table_filter").children().addClass("pull-right");
+  $(".box-header").attr("style", "float:left").addClass("col-xs-6");
+  
+
+  function initImage() {
+    $("#face_table tbody tr").each(function() {
+      //data_src = "../" + $(this).children("td").eq(5).html();
+      //$(this).children("td").eq(6).html(`<img style="display:inline; width:40px;height:32px;"                
+      //src="data:image/png;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" data-src="`+ data_src + `" alt="image 1"></img>`)
+    //   $(this).children("td").eq(6).html(`
+    //   <button type="button" class="btn btn-lg btn-danger" data-toggle="popover" title="Popover title" data-content="And here's some amazing content. It's very engaging. Right?">Click to toggle popover</button>
+    //   `);
+        if (!$(this).children("td").eq(6).hasClass("has_img")) {
+            $(this).children("td").eq(6).addClass("has_img");
+            var upvote = '';
+            if ($(this).index() > 6) {
+                upvote = ' upvote ';
+            }
+            $(this).children("td").eq(6).html(`
+            <div class="popover__wrapper">
+            <a href="#">
+                <h2 class="popover__title">查看照片</h2>
+            </a>
+            <div class="popover__content` + upvote + `">
+                <p class="popover__message">` + 
+                    $(this).children("td").eq(0).html() + "————" + $(this).children("td").eq(2).html()
+                + `</p>
+                <img height="360px" width="450px" alt="人脸照片加载失败" src="` +
+                `../` + $(this).children("td").eq(5).html()
+            + `">
+            </div>
+            
+            </div>
+            `)
+        }
+    });
+  }
+
+  // 鼠标悬浮获取图片
+//   function bindImageHoverEvent() {
+//     $("#face_table tbody tr").each(function() {
+//       $(this).children("td:not(.bound)").eq(6).addClass('bound').hover(function () {
+//         img = $(this).children("img");
+//         data_src = img.attr("data-src");
+//         if (data_src) {
+//           img.attr("src", data_src);
+//         }
+        // $(this).popover('show');
+        //  if (!$(this).hasClass("hasImage")) {
+        //   $(this).addClass("hasImage");
+        //   data = {
+        //     "path": $(this).prev().html()
+        //   };
+        //   $.post(
+        //     '/admin/image',
+        //     {data:JSON.stringify(data)},
+        //     function(response) {
+              
+        //       img = response;
+        //       data_src = $(this).attr("data-src")
+        //       if (data_src) {
+        //         $(this).attr("src", data_src);
+        //       }
+        //     }
+        //   )
+        // }
+//       })
+//     });
+//   }
+
+  // $("#face_table").on("page.dt", function() {
+  //   var table = $('#face_table').DataTable();
+  //   var info = table.page.info();
+  //   alert(info.page);
+  //   bindImageHoverEvent();
+  // })
+
+  $("body").on('DOMSubtreeModified', "#face_table", function() {
+    initImage();
+  });
+
+    // 导出报表
+    $("#btnExportExcel").on("click", function () {
+        $("#face_table").table2excel({
+            filename: "验证记录表.xls"
+        });
+    });
+
+    $("body").on("click", "#btnExportPdf", function () {
+        html2canvas($('#face_table')[0], {
+            onrendered: function (canvas) {
+                var data = canvas.toDataURL();
+                var docDefinition = {
+                    content: [{
+                        image: data,
+                        width: 500
+                    }]
+                };
+                pdfMake.createPdf(docDefinition).download("验证记录表.pdf");
+            }
+        });
+    });
+
+
+</script>
+{% endblock %}
