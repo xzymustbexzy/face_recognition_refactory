@@ -7,7 +7,7 @@ import datetime
 Agent是一个代理，相当于一个代替测试程序去完成真正请求工作的类
 '''
 class Agent(object):
-    HOST = 'localhost'
+    HOST = '212.64.41.5'
     PORT = '5050'
     ROOT_PATH = '/faceService/'
     URL = 'http://' + HOST + ':' + PORT + ROOT_PATH
@@ -87,5 +87,5 @@ def test_check():
 
 
 if __name__ == '__main__':
-    # test_login()
-    test_check()
+    test_login()
+    # test_check()
